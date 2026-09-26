@@ -30,7 +30,7 @@ nav:
   - Widgets:
       - Overview: index.md
       - EzCircleAvatar: ez_circle_avatar.md
-      - EZEmailField: ez_email_field.md
+      - EzEmailField: ez_email_field.md
       - EzGridView: ez_grid_view.md
       - EzListView: ez_list_view.md
       - EzCustomScrollView: ez_custom_scroll_view.md
