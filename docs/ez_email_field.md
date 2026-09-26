@@ -1,21 +1,27 @@
-# EZEmailField
+# EzEmailField
 
-A pre-validated, highly customizable email text field with built-in regex and error handling.
+A pre-configured, self-validating Flutter text field specifically designed for email input with built-in RFC 5322 regex validation, auto-trimming, mobile autofill, and quick clear support.
 
-## Why use EZEmailField?
+## Why use EzEmailField?
 
-Implementing email fields repeatedly involves tedious boilerplate. The standard `TextFormField` requires you to:
+Implementing email fields repeatedly across an application involves tedious boilerplate. Standard `TextFormField` requires you to:
 
-*   **Copy-Paste Regex:** Manually add the same email validation regex to every form.
-*   **Write Validation Logic:** Repeat the same `if (value.isEmpty) ... else if (!regex.hasMatch) ...` pattern.
-*   **Inconsistent UX:** Different parts of your app might accept different email formats or show different error messages.
+*   **Copy-Paste Regex:** Manually maintain email regex patterns across different forms.
+*   **Whitespace Bugs:** Handle leading and trailing spaces that mobile keyboards insert via auto-correct or clipboard paste, which cause valid user emails to fail validation.
+*   **Missing Autofill:** Manually configure `autofillHints: [AutofillHints.email]` so iOS, Android, and password managers can suggest saved addresses.
+*   **Clear Button Boilerplate:** Manage custom state or suffix icon controllers just to let users clear typed text quickly.
+*   **Inconsistent UX:** Deal with disparate validation messages and styling across different screens.
 
-**EZEmailField** encapsulates best practices into a single widget:
+**EzEmailField** solves all of this out of the box:
 
-*   **Built-in Validation:** Comes with a robust, industry-standard regex for email validation out of the box.
-*   **Defensive Defaults:** Handles empty states and formatting errors automatically with clear messages.
-*   **Unified UX:** Ensures email input behaves consistently across your entire application.
-*   **Zero-Config:** Just drop it in a `Form`, and it works immediately.
+*   **Built-in RFC 5322 Validation:** Comes with an optimized, industry-standard regex for validating email formats automatically.
+*   **Auto-trimming:** Automatically trims leading and trailing whitespace on validation and form submission (`autoTrim: true` by default).
+*   **Mobile Autofill:** Pre-configured with `[AutofillHints.email]` for instant autofill prompts on mobile devices and browsers.
+*   **Quick Clear Button:** Optional `showClearButton: true` displays a suffix icon button that appears when text is entered and clears on tap.
+*   **100% Drop-in Parity:** Supports all standard `TextFormField` parameters (`validator`, `initialValue`, `focusNode`, `autovalidateMode`, `enabled`, `onSaved`, `inputFormatters`, `onTap`).
+*   **Backwards Compatible:** Includes `EZEmailField` typedef so existing projects continue to compile without code modifications.
+
+---
 
 ## API Reference
 
@@ -24,96 +30,115 @@ Implementing email fields repeatedly involves tedious boilerplate. The standard 
 | `labelText` | `String` | The label displayed above the field. Defaults to `'Email'`. |
 | `hintText` | `String` | Placeholder text shown when the field is empty. Defaults to `'Enter your email address'`. |
 | `required` | `bool` | If true, validation ensures the field is not empty. Defaults to `true`. |
-| `controller` | `TextEditingController?` | External controller to manage the field's content. If null, an internal controller is used. |
-| `decoration` | `InputDecoration?` | Custom decoration to override default styling (border, icons, padding, etc.). |
-| `customValidator` | `FormFieldValidator<String>?` | Custom validation function. If provided, it *replaces* the default email validation entirely. |
-| `emailRegex` | `RegExp?` | Custom regex for email validation. If provided, replaces the default complex regex. |
-| `onChanged` | `ValueChanged<String>?` | Callback invoked when the text changes. |
-| `readOnly` | `bool` | If true, the field cannot be edited. Defaults to `false`. |
-| `autofocus` | `bool` | If true, the field automatically receives focus when displayed. Defaults to `false`. |
-| `obscureText` | `bool` | If true, hides the text (typically for passwords). Defaults to `false`. |
-| `maxLines` | `int?` | Maximum number of lines. Defaults to `1`. |
-| `minLines` | `int?` | Minimum number of lines. |
-| `style` | `TextStyle?` | Text style for the input. Defaults to 16px. |
-| `textAlign` | `TextAlign` | Text alignment. Defaults to `TextAlign.start`. |
-| `textInputAction` | `TextInputAction?` | Action button on the keyboard. Defaults to `TextInputAction.next`. |
+| `requiredMessage` | `String?` | Custom error message when the required field is empty. Defaults to `'${labelText} is required.'`. |
+| `invalidEmailMessage` | `String?` | Custom error message when the format is invalid. Defaults to `'Please enter a valid email address.'`. |
+| `autoTrim` | `bool` | Automatically trims leading and trailing whitespace. Defaults to `true`. |
+| `showClearButton` | `bool` | Shows a clear suffix icon button when text is present. Defaults to `false`. |
+| `clearIcon` | `Widget?` | Custom icon widget for the clear button. Defaults to `Icon(Icons.clear, size: 20)`. |
+| `controller` | `TextEditingController?` | External controller. If null, an internal controller is managed automatically. |
+| `initialValue` | `String?` | Initial text value when no external controller is provided. |
+| `focusNode` | `FocusNode?` | Focus node to control keyboard focus. |
+| `decoration` | `InputDecoration?` | Custom decoration overriding default styling (prefix icon, borders, padding). |
+| `validator` | `FormFieldValidator<String>?` | Custom validation function. If provided, replaces default email validation. |
+| `customValidator` | `FormFieldValidator<String>?` | Backwards-compatible alias for `validator`. |
+| `emailRegex` | `RegExp?` | Custom regex pattern replacing the default RFC 5322 regex. |
+| `onChanged` | `ValueChanged<String>?` | Callback invoked whenever text changes. |
+| `onSaved` | `FormFieldSetter<String>?` | Callback invoked when the enclosing form is saved via `FormState.save()`. |
+| `onFieldSubmitted` | `ValueChanged<String>?` | Callback invoked when the user submits editing on the keyboard. |
+| `autovalidateMode` | `AutovalidateMode?` | Controls when validation errors are displayed (e.g. `onUserInteraction`). |
+| `autofillHints` | `Iterable<String>?` | Autofill hints for the OS. Defaults to `const [AutofillHints.email]`. |
+| `readOnly` | `bool` | If true, prevents editing. Defaults to `false`. |
+| `autofocus` | `bool` | Automatically focuses the field on display. Defaults to `false`. |
+| `enabled` | `bool?` | Whether the field is enabled for user interaction. |
+| `inputFormatters` | `List<TextInputFormatter>?` | Optional formatters applied as the user types. |
 | `keyboardType` | `TextInputType?` | Keyboard type. Defaults to `TextInputType.emailAddress`. |
-| `onFieldSubmitted` | `ValueChanged<String>?` | Callback when the user submits the field (e.g., presses "done"). |
-| `onEditingComplete` | `VoidCallback?` | Callback when editing is complete. |
+| `textInputAction` | `TextInputAction?` | Keyboard action button. Defaults to `TextInputAction.next`. |
+| `textCapitalization` | `TextCapitalization` | Keyboard capitalization. Defaults to `TextCapitalization.none`. |
 
-*See [TextFormField](https://api.flutter.dev/flutter/material/TextFormField-class.html) for additional inherited properties.*
+*See [TextFormField](https://api.flutter.dev/flutter/material/TextFormField-class.html) for all standard inherited properties.*
+
+---
 
 ## Usage Examples
 
 ### 1. Basic (Zero Config)
 
-Just drop it in a `Form`. It automatically validates email format.
+Just drop it into a `Form`. It automatically validates email format and required status:
 
 ```dart
 Form(
   key: _formKey,
   child: Column(
     children: [
-      EZEmailField(),
+      const EzEmailField(),
       ElevatedButton(
         onPressed: () {
           if (_formKey.currentState!.validate()) {
-            // Email is valid
+            // Email is valid!
           }
         },
-        child: Text('Submit'),
+        child: const Text('Submit'),
       ),
     ],
   ),
 )
 ```
 
-### 2. Custom Styling
+### 2. Clear Button & Auto-Validation
 
-Override labels, hints, and decoration.
+Shows a clear button when typing and validates instantly on user interaction:
 
 ```dart
-EZEmailField(
+EzEmailField(
+  labelText: 'Account Email',
+  showClearButton: true,
+  autovalidateMode: AutovalidateMode.onUserInteraction,
+  onSaved: (email) => print('Saved: $email'),
+)
+```
+
+### 3. Custom Error Messages
+
+Customizing validation strings:
+
+```dart
+EzEmailField(
+  requiredMessage: 'Email address cannot be empty',
+  invalidEmailMessage: 'Please provide a valid email format (e.g. name@domain.com)',
+)
+```
+
+### 4. Custom Validation (Domain Restrictions)
+
+Override default validation with domain rules:
+
+```dart
+EzEmailField(
+  labelText: 'Corporate Email',
+  validator: (value) {
+    if (value == null || !value.endsWith('@company.com')) {
+      return 'Must be an @company.com email address';
+    }
+    return null;
+  },
+  decoration: const InputDecoration(
+    helperText: 'Only employees with @company.com can sign in',
+  ),
+)
+```
+
+### 5. Custom Styling
+
+Override prefix icons, borders, and fill colors via `InputDecoration`:
+
+```dart
+EzEmailField(
   labelText: 'Work Email',
   hintText: 'john.doe@company.com',
-  decoration: InputDecoration(
+  decoration: const InputDecoration(
     border: OutlineInputBorder(),
     prefixIcon: Icon(Icons.work_outline),
     filled: true,
   ),
-)
-```
-
-### 3. Custom Validation (Domain Restriction)
-
-Add extra validation on top of the built-in email check.
-
-```dart
-EZEmailField(
-  customValidator: (value) {
-    if (value != null && !value.endsWith('@company.com')) {
-      return 'Corporate email required';
-    }
-    return null; // Passes custom validation
-  },
-  decoration: InputDecoration(
-    labelText: 'Corporate Email',
-    helperText: 'Must end with @company.com',
-  ),
-)
-```
-
-### 4. With Controller
-
-Use an external controller to access or manipulate the text.
-
-```dart
-final _emailController = TextEditingController();
-
-EZEmailField(
-  controller: _emailController,
-  onChanged: (value) {
-    print('Email changed: $value');
-  },
 )
 ```
