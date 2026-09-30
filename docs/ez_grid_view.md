@@ -1,6 +1,6 @@
 # EzGridView
 
-A crash-safe GridView.builder that automatically handles unbounded constraints in Columns and Rows.
+A crash-safe, self-aware drop-in replacement for Flutter's `GridView` that automatically handles unbounded constraints in `Column`, `Row`, `Flex`, and nested scroll views.
 
 ## Why use EzGridView?
 
@@ -13,53 +13,122 @@ Flutter's `GridView` tries to expand to fill all available space in its scroll d
 *   Nesting it inside another `ListView`, `CustomScrollView`, or `SingleChildScrollView`
 *   Using it inside a `Flex` or unconstrained `Card`
 
-Instead of a simple error, this often breaks the build process entirely, causing the UI to vanish and spamming the console with cryptic messages like:
+Instead of a graceful degradation, standard Flutter throws fatal exceptions:
 
-*   "Vertical viewport was given unbounded height."
-*   "RenderBox was not laid out: RenderViewport... NEEDS-PAINT"
-*   "Failed assertion: ... 'hasSize'"
+*   `"Vertical viewport was given unbounded height."`
+*   `"Horizontal viewport was given unbounded width."`
+*   `"RenderBox was not laid out: RenderViewport... NEEDS-PAINT"`
 
 **EzGridView** is a defensive wrapper that detects these unbounded constraints *before* they cause damage:
 
 *   **Auto-Detection:** Instantly identifies if it's in a `Column`, `Row`, or other unbounded parent.
-*   **Crash Prevention:** Automatically applies a safe, bounded size (50% of screen) to ensure the widget renders instead of breaking.
+*   **Crash Prevention:** Automatically applies a safe, bounded size based on available screen space to ensure the widget renders instead of breaking.
 *   **Developer Feedback (Debug Mode):** Displays a **red border** and logs a clear warning identifying the exact parent causing the issue.
-*   **Silent Fix (Release Mode):** Applies the fix silently so your users never see a broken screen.
+*   **Silent Fix (Release Mode):** Applies the fix silently so users never see a red screen of death.
+*   **100% Drop-in Parity:** Supports all 5 standard constructors:
+    * `EzGridView(...)` (children list)
+    * `EzGridView.builder(...)` (on-demand item builder)
+    * `EzGridView.count(...)` (fixed cross-axis count)
+    * `EzGridView.extent(...)` (max cross-axis extent)
+    * `EzGridView.custom(...)` (custom delegates)
+
+## Constructors
+
+### 1. Default `EzGridView(...)`
+Takes an explicit list of `children` with a custom `gridDelegate`:
+```dart
+EzGridView(
+  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2),
+  children: const [
+    Card(child: Text('1')),
+    Card(child: Text('2')),
+  ],
+)
+```
+
+### 2. `EzGridView.builder(...)`
+Builds grid tiles on demand using `itemBuilder`:
+```dart
+EzGridView.builder(
+  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3),
+  itemCount: 30,
+  itemBuilder: (context, index) => Card(child: Text('Item $index')),
+)
+```
+
+### 3. `EzGridView.count(...)`
+Convenience constructor creating a grid with a fixed number of tiles in the cross axis:
+```dart
+EzGridView.count(
+  crossAxisCount: 3,
+  children: List.generate(9, (index) => Text('Tile $index')),
+)
+```
+
+### 4. `EzGridView.extent(...)`
+Convenience constructor creating a grid where tiles have a maximum cross-axis extent:
+```dart
+EzGridView.extent(
+  maxCrossAxisExtent: 150,
+  children: List.generate(12, (index) => Text('Tile $index')),
+)
+```
+
+### 5. `EzGridView.custom(...)`
+Complete control with custom `gridDelegate` and `childrenDelegate`:
+```dart
+EzGridView.custom(
+  gridDelegate: myCustomGridDelegate,
+  childrenDelegate: myCustomChildrenDelegate,
+)
+```
 
 ## API Reference
 
-| Property | Type | Description |
-| :--- | :--- | :--- |
-| `gridDelegate` | `SliverGridDelegate` | **Required.** Controls the layout of tiles (e.g., `SliverGridDelegateWithFixedCrossAxisCount`). |
-| `itemBuilder` | `IndexedWidgetBuilder` | **Required.** Function that builds the widgets for each grid item. |
-| `itemCount` | `int?` | The number of items in the grid. If null, the grid is infinite. |
-| `physics` | `ScrollPhysics?` | How the grid should respond to user input (e.g., `BouncingScrollPhysics`). |
-| `padding` | `EdgeInsetsGeometry?` | Padding around the grid content. |
-
-*See [GridView](https://api.flutter.dev/flutter/widgets/GridView-class.html) for additional inherited properties.*
+| Property | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `gridDelegate` | `SliverGridDelegate` | *Required* | Controls layout of grid tiles. |
+| `childrenDelegate` | `SliverChildDelegate` | *Required* | Provides child widgets for the grid. |
+| `scrollDirection` | `Axis` | `Axis.vertical` | Axis along which the grid scrolls. |
+| `reverse` | `bool` | `false` | Whether the grid scrolls in reverse direction. |
+| `controller` | `ScrollController?` | `null` | Controls the scroll position. |
+| `primary` | `bool?` | `null` | Whether this is the primary scroll view. |
+| `physics` | `ScrollPhysics?` | `null` | How the scroll view should respond to user input. |
+| `shrinkWrap` | `bool` | `false` | Whether scroll view wraps its contents along scroll axis. |
+| `padding` | `EdgeInsetsGeometry?` | `null` | Padding around the grid content. |
+| `scrollCacheExtent` | `ScrollCacheExtent?` | `null` | Viewport cache area for pre-rendering offscreen tiles. |
+| `semanticChildCount` | `int?` | `null` | Number of children for accessibility indexing. |
+| `dragStartBehavior` | `DragStartBehavior` | `start` | How drag start behavior is handled. |
+| `keyboardDismissBehavior` | `ScrollViewKeyboardDismissBehavior` | `manual` | How keyboard is dismissed on scroll. |
+| `restorationId` | `String?` | `null` | State restoration identifier. |
+| `clipBehavior` | `Clip` | `Clip.hardEdge` | Clip behavior for content outside view area. |
+| `hitTestBehavior` | `HitTestBehavior` | `opaque` | Hit testing behavior. |
+| `showDebugIndicator` | `bool` | `true` | Displays red outline border in debug mode when unbounded. |
+| `fallbackWidth` | `double?` | `null` | Custom fallback width for unbounded horizontal layout. |
+| `fallbackHeight` | `double?` | `null` | Custom fallback height for unbounded vertical layout. |
+| `onUnboundedDetected` | `Function?` | `null` | Diagnostic callback invoked when unbounded parent is caught. |
 
 ## Usage Examples
 
 ### 1. Safe Inside Column (Crash Prevention)
 
-This would normally crash, but `EzGridView` handles it safely.
+This normally crashes in Flutter, but `EzGridView` handles it safely:
 
 ```dart
 Column(
   children: [
-    Text('My Gallery'),
-    
-    // No crash! EzGridView detects unbounded height and applies a fix.
-    EzGridView.builder(
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 8,
-      ),
-      itemCount: 9,
-      itemBuilder: (context, index) => Container(
-        color: Colors.blue,
-        child: Center(child: Text('$index')),
+    const Text('My Gallery'),
+    // No crash! EzGridView detects unbounded height and applies a fallback.
+    EzGridView.count(
+      crossAxisCount: 3,
+      mainAxisSpacing: 8,
+      crossAxisSpacing: 8,
+      children: List.generate(
+        9,
+        (index) => Container(
+          color: Colors.blue,
+          child: Center(child: Text('$index')),
+        ),
       ),
     ),
   ],
@@ -68,15 +137,15 @@ Column(
 
 ### 2. The "Correct" Fix (Best Practice)
 
-While `EzGridView` prevents the crash, the best practice is to provide explicit constraints using `Expanded` or `SizedBox`.
+While `EzGridView` prevents the crash, providing explicit constraints using `Expanded` or `SizedBox` is best practice:
 
 ```dart
 Column(
   children: [
-    Text('Header'),
+    const Text('Header'),
     Expanded(
       child: EzGridView.builder(
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
         ),
         itemCount: 20,
@@ -89,16 +158,21 @@ Column(
 )
 ```
 
-### 3. Standard Usage (No Unbounded Constraints)
+### 3. Custom Diagnostics Callback
 
-When used normally (not inside a `Column`), it behaves exactly like `GridView.builder`.
+Collect telemetry or notify developers of layout issues:
 
 ```dart
 EzGridView.builder(
-  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-    crossAxisCount: 4,
-  ),
-  itemCount: 100,
-  itemBuilder: (context, index) => Image.network('https://picsum.photos/200'),
+  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2),
+  itemCount: 10,
+  itemBuilder: (context, index) => Text('Item $index'),
+  onUnboundedDetected: ({
+    required bool isWidthUnbounded,
+    required bool isHeightUnbounded,
+    required String culprit,
+  }) {
+    logger.warning('EzGridView encountered unbounded layout inside $culprit');
+  },
 )
 ```
